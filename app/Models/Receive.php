@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Receive extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, Filterable;
 
     protected $guarded = [];
 

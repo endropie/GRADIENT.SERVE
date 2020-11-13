@@ -2,23 +2,28 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\ApiController;
+use App\Http\Resources\LoadingResource;
 use App\Models\Item;
 use App\Models\Loading;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class LoadingController extends Controller
+class LoadingController extends ApiController
 {
     public function index (Request $request)
     {
         switch ($request->get('mode')) {
             case 'all':
-                $loadings = Loading::latest()->all();
+                $loadings = Loading::latest()->limitable();
+                $loadings = LoadingResource::collection($loadings);
                 break;
 
             default:
-            $loadings = Loading::latest()->paginate();
+                $loadings = Loading::latest()->pagetable();
+                $loadings->getCollection()->transform(function($row) {
+                    return new LoadingResource($row);
+                });
                 break;
         }
 
@@ -31,9 +36,12 @@ class LoadingController extends Controller
             // 'number' => ['nullable', 'unique:loadings'],
             'date' => ['required', 'date'],
             'reference_number' => ['nullable'],
-            'reference_batch' => ['nullable', 'required_without:referece_number',
+            'reference_via' => ['required'],
+            'reference_date' => ['required'],
+            'reference_batch' => ['required',
                 \Illuminate\Validation\Rule::unique('loadings')->where(function ($query) use($request) {
-                    return $query->where('reference_number', $request->reference_number)
+                    return $query->where('reference_via', $request->reference_via)
+                                 ->where('reference_date', $request->reference_date)
                                  ->where('reference_batch', $request->reference_batch);
                 })->ignore($request->id)
             ],
@@ -78,7 +86,8 @@ class LoadingController extends Controller
     {
         $loading = Loading::with(['loading_items.item'])->findOrFail($id);
 
-        return response()->json($loading);
+        // return response()->json($loading);
+        return new LoadingResource($loading);
     }
 
     public function destroy ($id)

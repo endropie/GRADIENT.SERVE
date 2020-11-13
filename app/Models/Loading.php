@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Loading extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, Filterable;
 
     protected $guarded = [];
 

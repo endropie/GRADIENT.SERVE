@@ -2,27 +2,32 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\ApiController;
+use App\Http\Resources\ReceiveResource;
 use App\Models\Item;
 use App\Models\Receive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class ReceiveController extends Controller
+class ReceiveController extends ApiController
 {
     public function index (Request $request)
     {
         switch ($request->get('mode')) {
             case 'all':
-                $items = Receive::latest()->all();
+                $receives = Receive::latest()->limitable();
+                $receives = ReceiveResource::collection($receives);
                 break;
 
             default:
-            $items = Receive::latest()->paginate();
+                $receives = Receive::latest()->pagetable();
+                $receives->getCollection()->transform(function($row) {
+                    return new ReceiveResource($row);
+                });
                 break;
         }
 
-        return response()->json($items);
+        return response()->json($receives);
     }
 
     public function store (Request $request)
@@ -45,7 +50,6 @@ class ReceiveController extends Controller
         DB::beginTransaction();
 
         $receive = Receive::create([
-            // 'number' => $request->number,
             'date' => $request->date,
             'reference_number' => $request->reference_number,
             'reference_batch' => $request->reference_batch
@@ -75,7 +79,8 @@ class ReceiveController extends Controller
     {
         $receive = Receive::with(['receive_items.item'])->findOrFail($id);
 
-        return response()->json($receive);
+        // return response()->json($receive);
+        return new ReceiveResource($receive);
     }
 
     public function destroy ($id)
@@ -85,7 +90,10 @@ class ReceiveController extends Controller
         $receive = Receive::findOrFail($id);
 
         foreach ($receive->receive_items as $detail) {
-            $detail->item_serial->delete();
+            if ($serial = Item::serial($detail->serial)) {
+                $serial->forceDelete();
+            }
+            else abort(501, "SERIAL $detail->serial undefined!");
         }
 
         $receive->forceDelete();

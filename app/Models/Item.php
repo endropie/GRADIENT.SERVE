@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Item extends Model
 {
-    use HasFactory;
+    use HasFactory, Filterable;
 
     protected $guarded = [];
 
@@ -17,8 +17,8 @@ class Item extends Model
         return $this->hasMany(\App\Models\ItemSerial::class);
     }
 
-    public static function serial ($value) : ItemSerial
+    public static function serial ($value)
     {
-        return app(\App\Models\ItemSerial::class)->where('serial', $value)->first();
+        return app(\App\Models\ItemSerial::class)->where('serial', $value)->first() ?? null;
     }
 }

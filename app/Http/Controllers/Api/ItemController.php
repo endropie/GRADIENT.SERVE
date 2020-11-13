@@ -2,18 +2,27 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Filters\Filter;
+use App\Http\Controllers\ApiController;
+use App\Http\Resources\ItemResource;
 use App\Models\Item;
 use App\Models\ItemSerial;
 use Illuminate\Http\Request;
 
-class ItemController extends Controller
+class ItemController extends ApiController
 {
 
-    public function index (Request $request)
+    public function index (Request $request, Filter $filter)
     {
+        switch ($request->get('mode')) {
+            case 'all':
+                $items = Item::filter($filter)->latest()->get();
+                break;
 
-        $items = Item::all();
+            default:
+                $items = Item::filter($filter)->pagetable();
+                break;
+        }
 
         return response()->json($items);
     }
@@ -23,6 +32,8 @@ class ItemController extends Controller
         $item = Item::findOrFail($id);
 
         return response()->json($item);
+        // return new ItemResource($item);
+        // return ItemResource::collection(Item::all());
     }
 
     public function destroy ($id)
